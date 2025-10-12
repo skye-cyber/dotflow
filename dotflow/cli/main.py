@@ -13,6 +13,7 @@ from ..core.models import Direction, NodeShape
 from ..exporters.image import ImageExporter
 from ..exporters.dot import DotExporter
 from ..utils.exceptions import DotFlowError
+from ..core.styles import SmartStyles as st
 
 
 @click.group()
@@ -152,7 +153,7 @@ def _run_interactive_wizard(flow: DotInterpreter):
 
     while True:
         click.echo("\nCurrent flow:")
-        click.echo(flow.to_dot())
+        click.echo(rf"{st.INFO}{flow.to_dot()}{st.RESET}")
         click.echo()
 
         click.echo("Options:")
@@ -171,7 +172,7 @@ def _run_interactive_wizard(flow: DotInterpreter):
             flow.start(node_id)
             nodes.append(node_id)
             current_node = node_id
-            click.echo(f"✓ Added start node: {node_id}")
+            click.echo(f"{st.INFO}✓{st.RESET} Added start node: {node_id}")
 
         elif choice == 2:
             node_id = click.prompt("Enter node ID")
@@ -179,7 +180,7 @@ def _run_interactive_wizard(flow: DotInterpreter):
             flow.process(node_id, label)
             nodes.append(node_id)
             current_node = node_id
-            click.echo(f"✓ Added process node: {node_id}")
+            click.echo(f"{st.INFO}✓{st.RESET} Added process node: {node_id}")
 
         elif choice == 3:
             node_id = click.prompt("Enter node ID")
@@ -187,18 +188,18 @@ def _run_interactive_wizard(flow: DotInterpreter):
             flow.decision(node_id, question)
             nodes.append(node_id)
             current_node = node_id
-            click.echo(f"✓ Added decision node: {node_id}")
+            click.echo(f"{st.INFO}✓{st.RESET} Added decision node: {node_id}")
 
         elif choice == 4:
             node_id = click.prompt("Enter node ID")
             flow.end(node_id)
             nodes.append(node_id)
             current_node = node_id
-            click.echo(f"✓ Added end node: {node_id}")
+            click.echo(f"{st.INFO}✓{st.RESET} Added end node: {node_id}")
 
         elif choice == 5:
             if len(nodes) < 2:
-                click.echo("Need at least 2 nodes to connect")
+                click.echo(f"{st.ERR}Need at least 2 nodes to connect{st.RESET}")
                 continue
 
             click.echo("Available nodes: " + ", ".join(nodes))
@@ -207,14 +208,14 @@ def _run_interactive_wizard(flow: DotInterpreter):
             label = click.prompt("Label (optional)", default="")
 
             if from_node not in nodes:
-                click.echo(f"Node {from_node} not found")
+                click.echo(f"Node {st.WARN}{from_node}{st.WARN} not found")
                 continue
             if to_node not in nodes:
-                click.echo(f"Node {to_node} not found")
+                click.echo(f"Node {st.WARN}{to_node}{st.WARN} not found")
                 continue
 
             flow.connect(from_node, to_node, label if label else None)
-            click.echo(f"✓ Connected {from_node} -> {to_node}")
+            click.echo(f"{st.INFO}✓{st.RESET} Connected {from_node} -> {to_node}")
 
         elif choice == 6:
             cluster_name = click.prompt("Enter cluster name")
@@ -231,7 +232,7 @@ def _run_interactive_wizard(flow: DotInterpreter):
         elif choice == 7:
             break
         else:
-            click.echo("Invalid option")
+            click.echo(f"{st.WARN} Invalid option{st.RESET}")
 
 
 def _run_quick_wizard(flow: DotInterpreter):
@@ -259,7 +260,7 @@ def validate(dsl_file: click.File):
         dsl_content = dsl_file.read()
         flow.parse_dsl(dsl_content)
 
-        click.echo("✅ DSL syntax is valid!")
+        click.echo(f"{st.OK}✓{st.RESET}DSL syntax is valid!")
         click.echo(f"Found {len(flow.nodes)} nodes and {len(flow.edges)} edges")
 
         # Show summary
@@ -275,7 +276,7 @@ def validate(dsl_file: click.File):
                 click.echo(f"  - {edge.from_node} -> {edge.to_node}{label_info}")
 
     except DotFlowError as e:
-        click.echo(f"❌ DSL validation failed: {e}", err=True)
+        click.echo(f"{st.ERR}❌{st.RESET} DSL validation failed: {e}", err=True)
         sys.exit(1)
 
 
@@ -457,7 +458,7 @@ def cheat_sheet(format: str):
             ImageExporter().export(flow.to_dot(), output_path, format)
     except Exception as e:
         sys.exit(f"{e}")
-    click.echo(f"✓ Generated cheat sheet: {output_path}")
+    click.echo(f"{st.OK}✓{st.INFO} Generated cheat sheet{st.RESET}: {output_path}")
 
 
 if __name__ == "__main__":
