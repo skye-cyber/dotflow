@@ -42,10 +42,11 @@ class DotInterpreter:
         self._current_cluster: Optional[str] = None
         self._theme_config = ThemeManager.get_theme_config(theme)
 
+        print(self.direction.value.strip('"').strip("'"))
         # Initialize default graph attributes
         self._graph_attrs = {
             "bgcolor": self._theme_config["bg_color"],
-            "rankdir": direction.value,
+            "rankdir": direction.value.replace('"', "").replace("'", ""),
         }
 
     def _create_node(
@@ -81,12 +82,14 @@ class DotInterpreter:
         """Create an edge with theme-appropriate styling."""
         # Validate nodes exist
         if from_node not in self.nodes and not any(
-            from_node in cluster.nodes for cluster in self.clusters.values()
+            from_node in [node.id for node in cluster.nodes]
+            for cluster in self.clusters.values()
         ):
             raise NodeNotFoundError(f"Source node '{from_node}' not found")
 
         if to_node not in self.nodes and not any(
-            to_node in cluster.nodes for cluster in self.clusters.values()
+            to_node in [node.id for node in cluster.nodes]
+            for cluster in self.clusters.values()
         ):
             raise NodeNotFoundError(f"Target node '{to_node}' not found")
 
@@ -212,6 +215,12 @@ class DotInterpreter:
 
         lines.append("}")
         return "\n".join(lines)
+
+    def get_cluster(self):
+        return self.clusters
+
+    def get_nodes(self):
+        return self.nodes
 
     def __str__(self) -> str:
         return self.to_dot()

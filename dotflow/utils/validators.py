@@ -22,6 +22,16 @@ def validate_node_id(node_id: str) -> None:
         )
 
 
+def node_id_validator(node_id: str) -> bool:
+    """Validate node ID format."""
+    if not node_id:
+        return False
+
+    if not re.match(r"^[a-zA-Z_]\w*$", node_id):
+        return False
+    return True
+
+
 def validate_label(label: str) -> None:
     """Validate label content."""
     if not label:
