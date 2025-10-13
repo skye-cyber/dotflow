@@ -110,17 +110,3 @@ class TextualDSL:
             label = attrs["label"]
 
         self._interpreter._create_node(node_id, label, shape)
-
-
-# Mixin for DotInterpreter
-class TextualDSLMixin:
-    """Mixin to add textual DSL methods to DotInterpreter."""
-
-    @property
-    def dsl(self) -> TextualDSL:
-        """Access textual DSL parser."""
-        return TextualDSL(self)
-
-    def parse_dsl(self, dsl_text: str) -> "DotInterpreter":
-        """Parse DSL text (convenience method)."""
-        return self.dsl.parse_dsl(dsl_text)

@@ -21,6 +21,7 @@ class NaturalLanguageAPI:
     ) -> "NaturalLanguageAPI":
         """Override >> operator for flow creation: flow >> "A" >> "B" """
         if isinstance(other, str):
+            other = other.replace(" ", "")
             validate_node_id(other)
 
             if self._last_node:

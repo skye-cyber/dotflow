@@ -42,7 +42,6 @@ class DotInterpreter:
         self._current_cluster: Optional[str] = None
         self._theme_config = ThemeManager.get_theme_config(theme)
 
-        print(self.direction.value.strip('"').strip("'"))
         # Initialize default graph attributes
         self._graph_attrs = {
             "bgcolor": self._theme_config["bg_color"],
@@ -53,6 +52,9 @@ class DotInterpreter:
         self, node_id: str, label: str, shape: NodeShape, **kwargs
     ) -> Node:
         """Create a node with theme-appropriate styling."""
+        # Remove whitespaces
+        node_id = node_id.replace(" ", "")
+        # Validate id and label
         validate_node_id(node_id)
         validate_label(label)
 
@@ -80,6 +82,9 @@ class DotInterpreter:
         **kwargs,
     ) -> Edge:
         """Create an edge with theme-appropriate styling."""
+        # remove whitespaces
+        from_node = from_node.replace(" ", "")
+        to_node = to_node.replace(" ", "")
         # Validate nodes exist
         if from_node not in self.nodes and not any(
             from_node in [node.id for node in cluster.nodes]

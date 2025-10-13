@@ -2,6 +2,7 @@
 Main CLI entry point for DotFlow.
 """
 
+import os
 import click
 import sys
 from pathlib import Path
@@ -16,6 +17,7 @@ from ..utils.exceptions import DotFlowError
 from ..utils.colors import fg, bg, rs
 from ..utils.validators import node_id_validator
 from ..utils.screen import clear_screen
+from ..api.mixins import TextualDSLMixin
 
 RESET = rs
 
@@ -28,7 +30,7 @@ def cli():
 
 
 @cli.command()
-@click.argument("output", type=click.Path())
+@click.argument("output", type=click.Path(), default=os.path.curdir)
 @click.option("--name", "-n", default="flow", help="Name of the flow diagram")
 @click.option(
     "--theme",
@@ -84,6 +86,7 @@ def generate(
 
         # Parse DSL and generate diagram
         flow.parse_dsl(dsl_content)
+        # TextualDSLMixin().parse_dsl(dsl_content)
 
         # Export based on format
         if format == "dot":
@@ -268,8 +271,8 @@ class InterractiveSession:
         dot_exporter = DotExporter()
         image_exporter = ImageExporter()
 
-        dot_path = Path(f"{self.output}_checkpoint").with_suffix(".dot")
-        png_path = Path(f"{self.output}_preview").with_suffix(".png")
+        dot_path = Path(f"{self.output.split('.')[0]}_checkpoint").with_suffix(".dot")
+        png_path = Path(f"{self.output.split('.')[0]}_preview").with_suffix(".png")
 
         dot_exporter.export(self.flow.to_dot(), str(dot_path))
         image_exporter.export(self.flow.to_dot(), str(png_path))
@@ -281,7 +284,7 @@ class InterractiveSession:
         # Always generate both DOT and PNG
         image_exporter = ImageExporter()
 
-        png_path = Path(f"{self.output}_preview").with_suffix(".png")
+        png_path = Path(f"{self.output.split('.')[0]}_preview").with_suffix(".png")
 
         image_exporter.export(self.flow.to_dot(), str(png_path))
 
@@ -354,6 +357,10 @@ class InterractiveSession:
             except Exception as e:
                 click.echo(f"{fg.RED}Wizard Error: {fg.YELLOW}{e}{RESET}", err=True)
                 continue
+
+    def load_file(self):
+        """TODO: Implement loading of dot file to resume editing"""
+        pass
 
 
 def _run_quick_wizard(flow: DotInterpreter):
@@ -486,32 +493,39 @@ def _create_decision_tree(flow: DotInterpreter):
     (
         flow.start("Start")
         .process("Input Data")
-        .decision("Valid?")
-        .connect("Valid?", "Process Data", label="Yes")
-        .connect("Valid?", "Error Handling", label="No")
+        .decision("Valid")
         .process("Process Data")
-        .decision("Success?")
-        .connect("Success?", "End", label="Yes")
-        .connect("Success?", "Error Handling", label="No")
+        .decision("Success")
         .process("Error Handling")
         .end("End")
+        .connect("Start", "Input Data", "Initialize")
+        .connect("Input Data", "Valid", "Data In")
+        .connect("Valid", "ProcessData", label="Yes")
+        .connect("Valid", "Error Handling", label="No")
+        .connect("ProcessData", "Error Handling", label="Processing Error")
+        .connect("ProcessData", "Success", label="Yes")
+        .connect("Success", "End", label="Yes")
+        .connect("Success", "Error Handling", label="No")
     )
 
 
 def _create_clustered_flow(flow: DotInterpreter):
     """Create a flow with clusters."""
     with flow.cluster("input", "Input Processing"):
-        flow.start("Read Input").process("Validate Input")
+        flow.start("Read Input").process("Validate Input", "Validate Input")
 
     with flow.cluster("processing", "Data Processing"):
         flow.process("Transform").process("Analyze")
 
     with flow.cluster("output", "Output"):
         flow.process("Generate Report").end("Finish")
-
-    flow.connect("Validate Input", "Transform")
-    flow.connect("Transform", "Analyze")
-    flow.connect("Analyze", "Generate Report")
+    (
+        flow.connect("Read Input", "Validate Input")
+        .connect("Validate Input", "Transform")
+        .connect("Transform", "Analyze")
+        .connect("Analyze", "Generate Report")
+        .connect("Generate Report", "Finish")
+    )
 
 
 def _create_complex_workflow(flow: DotInterpreter):
@@ -519,23 +533,23 @@ def _create_complex_workflow(flow: DotInterpreter):
     (
         flow.start("Init")
         .process("Load Config")
-        .decision("Config Valid?")
-        .connect("Config Valid?", "Read Data", label="Yes")
-        .connect("Config Valid?", "Init", label="No")
+        .decision("Config Valid")
         .process("Read Data")
-        .decision("Data Available?")
-        .connect("Data Available?", "Process Records", label="Yes")
-        .connect("Data Available?", "End", label="No")
+        .decision("Data Available")
         .process("Process Records")
-        .decision("All Processed?")
-        .connect("All Processed?", "Generate Output", label="Yes")
-        .connect("All Processed?", "Process Records", label="No")
+        .decision("All Processed")
         .process("Generate Output")
-        .decision("Output Valid?")
-        .connect("Output Valid?", "Save Results", label="Yes")
-        .connect("Output Valid?", "Process Records", label="No")
+        .decision("Output Valid")
         .process("Save Results")
         .end("End")
+        .connect("Config Valid", "Read Data", label="Yes")
+        .connect("Config Valid", "Init", label="No")
+        .connect("Data Available", "End", label="No")
+        .connect("Data Available", "Process Records", label="Yes")
+        .connect("All Processed", "Generate Output", label="Yes")
+        .connect("All Processed", "Process Records", label="No")
+        .connect("Output Valid", "Save Results", label="Yes")
+        .connect("Output Valid", "Process Records", label="No")
     )
 
 
