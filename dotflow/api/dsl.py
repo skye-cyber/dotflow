@@ -4,18 +4,17 @@ Textual DSL parser implementation.
 
 import re
 from typing import Optional
-from ..core.interpreter import DotInterpreter
-from ..core.models import NodeShape, EdgeStyle
+from ..core.models import NodeShape, EdgeStyle, Direction
 from ..utils.exceptions import DSLParseError
 
 
 class TextualDSL:
     """Textual Domain Specific Language parser."""
 
-    def __init__(self, interpreter: DotInterpreter):
+    def __init__(self, interpreter: "DotInterpreter"):
         self._interpreter = interpreter
 
-    def parse_dsl(self, dsl_text: str) -> DotInterpreter:
+    def parse_dsl(self, dsl_text: str) -> "DotInterpreter":
         """
         Parse textual DSL input.
 
@@ -65,6 +64,10 @@ class TextualDSL:
             self._interpreter.process(line)
             return
 
+        # Try dg attributes deirection=LR
+        # if re.match(r"^\w+=\s", line):
+        #  return
+
         raise DSLParseError(f"Unrecognized DSL syntax at line {line_number}")
 
     def _parse_connection(
@@ -110,3 +113,25 @@ class TextualDSL:
             label = attrs["label"]
 
         self._interpreter._create_node(node_id, label, shape)
+
+    def _parse_dg_attrs(self, node_id: str, attrs_str: str):
+        """Parse node attributes definition."""
+        attrs = {}
+
+        # Simple attribute parsing
+        for attr_match in re.finditer(r"(\w+)\s*=\s+", attrs_str):
+            key, value = attr_match.groups()
+            attrs[key.strip()] = value.strip().strip("'\"")
+
+        if "direction" in attrs:
+            dg_direction = attrs["direction"].upper()
+            try:
+                dg_dict = Direction.__dict__.copy()
+                if dg_direction in dg_dict.values():
+                    direction = dg_dict[dg_direction]
+                    direction = self._interpreter.direction = direction
+                    print(direction)
+            except KeyError:
+                pass
+
+        # self._interpreter._create_node(node_id, label, shape)

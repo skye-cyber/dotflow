@@ -17,7 +17,6 @@ from ..utils.exceptions import DotFlowError
 from ..utils.colors import fg, bg, rs
 from ..utils.validators import node_id_validator
 from ..utils.screen import clear_screen
-from ..api.mixins import TextualDSLMixin
 
 RESET = rs
 
@@ -86,8 +85,9 @@ def generate(
 
         # Parse DSL and generate diagram
         flow.parse_dsl(dsl_content)
-        # TextualDSLMixin().parse_dsl(dsl_content)
 
+        # Remove initial extension
+        output = f"{output.split('.', 1)[0]}.{format}"
         # Export based on format
         if format == "dot":
             exporter = DotExporter()
@@ -598,3 +598,19 @@ def cheat_sheet(format: str):
 
 if __name__ == "__main__":
     cli()
+
+"""
+# Pythonic API
+flow.py.node("A", "Label", shape=NodeShape.DIAMOND)
+flow.py.dashed_connect("A", "B")
+
+# Natural Language API
+flow >> "A" >> "B" | "Label"
+flow // "C"  # Dashed connection
+
+# DSL API
+flow.parse_dsl("A -> B : Label")
+
+# Mixed usage
+flow.start("A").py.diamond("B") >> "C" | "Label"
+"""

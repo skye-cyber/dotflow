@@ -2,9 +2,9 @@
 Main interpreter class that orchestrates all functionality.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, Union, List, Optional, Any, TYPE_CHECKING
 from contextlib import contextmanager
-
+from pathlib import Path
 from .models import (
     Node,
     Edge,
@@ -19,7 +19,14 @@ from ..utils.validators import validate_node_id, validate_label
 from ..utils.exceptions import (
     NodeNotFoundError,
 )
+from ..exporters.dot import DotExporter
+from ..exporters.image import ImageExporter
 from ..core.models import NodeStyle
+
+if TYPE_CHECKING:
+    from ..api.pythonic import PythonicAPI
+    from ..api.natural import NaturalLanguageAPI
+    from ..api.dsl import TextualDSL
 
 
 class DotInterpreter:
@@ -41,12 +48,73 @@ class DotInterpreter:
         self.clusters: Dict[str, Cluster] = {}
         self._current_cluster: Optional[str] = None
         self._theme_config = ThemeManager.get_theme_config(theme)
+        # API instances (lazy-loaded)
+        self._pythonic_api: Optional["PythonicAPI"] = None
+        self._natural_api: Optional["NaturalLanguageAPI"] = None
+        self._dsl_api: Optional["TextualDSL"] = None
+
+        # Natural language API state
+        self._last_node: Optional[str] = None
+        self._pending_label: Optional[str] = None
 
         # Initialize default graph attributes
         self._graph_attrs = {
             "bgcolor": self._theme_config["bg_color"],
             "rankdir": direction.value.replace('"', "").replace("'", ""),
         }
+
+    @property
+    def py(self) -> "PythonicAPI":
+        """Access Pythonic API methods."""
+        if self._pythonic_api is None:
+            from ..api.pythonic import PythonicAPI
+
+            self._pythonic_api = PythonicAPI(self)
+        return self._pythonic_api
+
+    @property
+    def nl(self) -> "NaturalLanguageAPI":
+        """Access natural language API."""
+        if self._natural_api is None:
+            from ..api.natural import NaturalLanguageAPI
+
+            self._natural_api = NaturalLanguageAPI(self)
+        return self._natural_api
+
+    @property
+    def dsl(self) -> "TextualDSL":
+        """Access textual DSL parser."""
+        if self._dsl_api is None:
+            from ..api.dsl import TextualDSL
+
+            self._dsl_api = TextualDSL(self)
+        return self._dsl_api
+
+    # Natural language API operators
+    def __rshift__(self, other: Union[str, "DotInterpreter"]) -> "DotInterpreter":
+        """Override >> operator for flow creation: flow >> "A" >> "B" """
+        return self.nl.__rshift__(other)
+
+    def __or__(self, other: str) -> "DotInterpreter":
+        """Override | operator for labels: flow >> "A" >> "B" | "Label" """
+        return self.nl.__or__(other)
+
+    def __getitem__(self, key: str) -> "DotInterpreter":
+        """Override [] for conditional flows: flow >> "A" >> "B"["Label"]"""
+        return self.nl.__getitem__(key)
+
+    def __floordiv__(self, other: str) -> "DotInterpreter":
+        """Override // for dashed connections: flow >> "A" // "B" """
+        return self.nl.__floordiv__(other)
+
+    def __divmod__(self, other: str) -> "DotInterpreter":
+        """Override // for dashed connections: flow >> "A" // "B" """
+        return self.nl.__divmod__(other)
+
+    # Textual DSL methods
+    def parse_dsl(self, dsl_text: str) -> "DotInterpreter":
+        """Parse DSL text (convenience method)."""
+        return self.dsl.parse_dsl(dsl_text)
 
     def _create_node(
         self, node_id: str, label: str, shape: NodeShape, **kwargs
@@ -222,14 +290,20 @@ class DotInterpreter:
         return "\n".join(lines)
 
     def get_cluster(self):
+        """Returns cached clusters for the active instance"""
         return self.clusters
 
     def get_nodes(self):
+        """Returns cached nodes for the active instance"""
         return self.nodes
+
+    def render(self, format: str, output):
+        output_path = Path(f"{output.split('.', 1)[0]}.{format}")
+
+        if format == "dot":
+            DotExporter().export(self.to_dot(), str(output_path))
+        else:
+            ImageExporter().export(self.to_dot(), str(output_path), format)
 
     def __str__(self) -> str:
         return self.to_dot()
-
-
-# Alias for backward compatibility
-Flow = DotInterpreter

@@ -47,8 +47,12 @@ flow >> "A" >> "B" | "Label"
 ### Textual DSL
 ```python
 flow.parse_dsl("""
-A -> B : Label
-B -> C
+A [shape=rect, label='Custom']
+B [shape=rect, label="decision"]
+C [shape=diamond, label=process]
+A->B:Input Data
+B{decison}->C:Valid
+# End of of diagram
 """)
 ```
 
@@ -59,8 +63,13 @@ DotFlow provides a powerful CLI for generating diagrams without writing Python c
 ### Basic Usage
 
 ```bash
-# Generate from DSL text
-dotflow generate diagram.png --dsl-text "Start -> Process -> End"
+# Generate from DSL text - Line breaks a mandatory just lik in dsl file
+dotflow generate my_diagram.png --dsl-text \
+"
+A
+B
+A->B
+" --theme green
 
 # Generate from DSL file
 dotflow generate diagram.svg --dsl-file workflow.dsl --theme dark
@@ -69,7 +78,7 @@ dotflow generate diagram.svg --dsl-file workflow.dsl --theme dark
 dotflow generate workflow.dot --dsl-file workflow.dsl --format dot
 ```
 
-Interactive Wizard
+- **Interactive Wizard**
 
 ```bash
 # Interactive flow creation
@@ -79,14 +88,14 @@ dotflow wizard my_flow.png --interactive
 dotflow wizard sample.png
 ```
 
-Validation
+- **Validation**
 
 ```bash
 # Validate DSL syntax
 dotflow validate workflow.dsl
 ```
 
-Examples
+- **Examples**
 
 ```bash
 # Generate example diagrams
@@ -96,24 +105,37 @@ dotflow examples --format svg --theme blue
 dotflow cheat-sheet
 ```
 
-Themes
+- **Themes**
 
 ```bash
 # List available themes
 dotflow themes
 ```
 
-DSL Syntax
+- **DSL Syntax**
 
 The textual DSL supports:
 
-```
+```dsl
 # Comments
-Start -> Process -> End
-A -> B : Label
-Decision {decision} -> Yes : Approved
-Node [shape=rect, label='Custom']
-```
+# First lets define the nodes
+Start[shape=ellipse]
+Valid[shape=diamond, label="Valid?"]
+Process
+ErrorHandler[label='Error Handler']
+Storage
+End[shape=ellipse]
+# make decisions and connect nodes
+# Validate data
+Start{decision}->Valid:Validate
+Valid->Process:isValid
+Process->Storage:Store data
+# Handle processing errors
+Process->ErrorHandler:Processing Error
+Storage->End:Finalize
+# Handle invalid data
+Valid->ErrorHandler:Invalid data
+ErrorHandler->End
 
 ```
 
@@ -128,7 +150,13 @@ pip install -e .
 
 ```bash
 # Generate a simple flow
-dotflow generate my_diagram.png --dsl-text "Start -> Process -> Decision -> End"
+dotflow generate my_diagram.png --dsl-text \
+"
+A
+B
+A->B
+" \
+--theme dark
 
 # Use interactive wizard
 dotflow wizard my_flow.png --interactive
@@ -143,19 +171,31 @@ dotflow examples --format svg
 1. Using as Python module:
 
 ```bash
-python -m dotflow generate diagram.png --dsl-text "A -> B -> C"
+python -m dotflow generate diagram.png --dsl-text "
+A
+B
+A->B
+" \
+--theme blue
 ```
 
-This CLI implementation provides:
+### This CLI implementation provides:
 
-· Multiple Commands: generate, wizard, validate, themes, examples, cheat-sheet
-· Interactive Mode: Build flows step-by-step
-· Comprehensive Validation: DSL syntax checking
-· Theme Support: All available themes accessible via CLI
-· Example Generation: Pre-built example diagrams
-· Error Handling: Robust error messages and exit codes
-· Testing: Complete test suite for CLI functionality
-· Flexible Output: Multiple formats (PNG, SVG, PDF, DOT)
+[] **Multiple Commands**: `generate`, `wizard`, `validate`, `themes`, `examples`, `cheat-sheet`
+
+[] **Interactive Mode**: Build flows step-by-step
+
+[] **Comprehensive Validation**: DSL syntax checking
+
+[] **Theme Support**: All available themes accessible via CLI
+
+[] **Example Generation**: Pre-built example diagrams
+
+[] **Error Handling**: Robust error messages and exit codes
+
+[] **Testing**: Complete test suite for CLI functionality
+
+[] **Flexible Output**: Multiple formats (PNG, SVG, PDF, DOT)
 
 The CLI makes the package accessible to users who prefer command-line tools or want to integrate diagram generation into scripts and automation workflows.
 
@@ -166,7 +206,7 @@ See full [documentation](https://dotflow.readthedocs.io/) for advanced usage.
 ## License
 - This product is licensed under MIT license see [license](./LICENSE)
 
-## 🆘 Support
+## Support
 
 - 📚 [Documentation](https://github.com/skye-cyber/dotflow/docs)
 - 🐛 [Issue Tracker](https://github.com/skye-cyber/dotflow/issues)

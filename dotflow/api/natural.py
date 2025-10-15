@@ -3,7 +3,6 @@ Natural language API implementation using operator overloading.
 """
 
 from typing import Union, Optional
-from ..core.interpreter import DotInterpreter
 from ..core.models import EdgeStyle
 from ..utils.validators import validate_node_id
 
@@ -11,7 +10,7 @@ from ..utils.validators import validate_node_id
 class NaturalLanguageAPI:
     """Natural language API using operator overloading."""
 
-    def __init__(self, interpreter: DotInterpreter):
+    def __init__(self, interpreter: "DotInterpreter"):
         self._interpreter = interpreter
         self._last_node: Optional[str] = None
         self._pending_label: Optional[str] = None
@@ -21,7 +20,6 @@ class NaturalLanguageAPI:
     ) -> "NaturalLanguageAPI":
         """Override >> operator for flow creation: flow >> "A" >> "B" """
         if isinstance(other, str):
-            other = other.replace(" ", "")
             validate_node_id(other)
 
             if self._last_node:
@@ -64,30 +62,3 @@ class NaturalLanguageAPI:
         """Reset the state for a new flow."""
         self._last_node = None
         self._pending_label = None
-
-
-# Mixin for DotInterpreter
-class NaturalLanguageAPIMixin:
-    """Mixin to add natural language API methods to DotInterpreter."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._natural_api = NaturalLanguageAPI(self)
-
-    @property
-    def nl(self) -> NaturalLanguageAPI:
-        """Access natural language API."""
-        return self._natural_api
-
-    # Delegate operators to natural API
-    def __rshift__(self, other):
-        return self.nl.__rshift__(other)
-
-    def __or__(self, other):
-        return self.nl.__or__(other)
-
-    def __getitem__(self, key):
-        return self.nl.__getitem__(key)
-
-    def __floordiv__(self, other):
-        return self.nl.__floordiv__(other)
