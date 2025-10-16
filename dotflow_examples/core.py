@@ -53,22 +53,26 @@ def demo_natural_language_api():
     (
         flow.start(node_id="Start")
         .process(node_id="Process")
-        .process(node_id="Decision")
+        .decision(node_id="decision", question="Proccessable?")
         .process(node_id="Success")
-        .process(node_id="Retry")
-        .decision(node_id="End")
-        .end(node_id="Start")
+        .py.circle(node_id="Retry")
+        .process(node_id="validate")
+        .end(node_id="End")
     )
 
-    flow >> "Start" >> "Process" >> "Decision" >> "Success" or "Yes" >> "End"
+    flow >> "Start" >> "validate" >> "decision" >> "Process" >> "Success" >> "End"
+    flow.connect("decision", "End", label="No")
+    flow.py.bold_connect("Process", "Retry", label="Reprocess")
+    flow.py.dashed_connect("Retry", "Process")
 
     # Alternative path with dashed connection
-    flow >> "Decision" // "Retry" | "No"
+    # flow >> "Decision" // "Retry" | "No"
 
     # Conditional label
-    flow >> "Retry" >> "Process"["After retry"]
+    # flow >> "Retry" >> "Process"
+    # flow["After retry"]
 
-    print(flow.to_dot())
+    # print(flow.to_dot())
     flow.render("png", "natural_demo.png")
     print("Generated natural_demo.png\n")
 

@@ -21,7 +21,6 @@ class NaturalLanguageAPI:
         """Override >> operator for flow creation: flow >> "A" >> "B" """
         if isinstance(other, str):
             validate_node_id(other)
-
             if self._last_node:
                 # Create connection from last node to new node
                 self._interpreter.connect(self._last_node, other, self._pending_label)
@@ -39,6 +38,7 @@ class NaturalLanguageAPI:
         """Override | operator for labels: flow >> "A" >> "B" | "Label" """
         if isinstance(other, str):
             self._pending_label = other
+            # self._last_node = other
         return self
 
     def __getitem__(self, key: str) -> "NaturalLanguageAPI":

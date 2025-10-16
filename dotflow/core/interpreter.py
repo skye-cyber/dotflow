@@ -93,6 +93,7 @@ class DotInterpreter:
     # Natural language API operators
     def __rshift__(self, other: Union[str, "DotInterpreter"]) -> "DotInterpreter":
         """Override >> operator for flow creation: flow >> "A" >> "B" """
+
         return self.nl.__rshift__(other)
 
     def __or__(self, other: str) -> "DotInterpreter":
@@ -307,3 +308,12 @@ class DotInterpreter:
 
     def __str__(self) -> str:
         return self.to_dot()
+
+
+class FlowExpr:
+    def __init__(self, flow, expr):
+        self.flow = flow
+        self.expr = expr
+
+    def __str__(self):
+        return f"{self.flow} // {self.expr}"

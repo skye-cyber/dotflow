@@ -11,6 +11,8 @@ from .exceptions import ValidationError
 
 def validate_node_id(node_id: str) -> None:
     """Validate node ID format."""
+    if "[" in node_id:
+        node_id = node_id.split("[")[0]
     if not node_id:
         raise ValidationError("Node ID cannot be empty")
 
