@@ -15,7 +15,7 @@ setup(
     description=DESCRIPTION,
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://pypi.org/project/dotflow/",
+    url="https://pypi.org/project/dotflow-py/",
     entry_points={
         "console_scripts": [
             "dotflow=dotflow.cli.main:cli",

@@ -13,7 +13,7 @@ A Python-based DOT language interpreter with multiple API styles for creating fl
 ## Installation
 
 ```bash
-pip install dotflow
+pip install dotflow-py
 ```
 
 ## Quick Start
