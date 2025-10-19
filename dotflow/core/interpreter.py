@@ -133,6 +133,22 @@ class DotInterpreter:
         custom_style.update(kwargs)
 
         style = NodeStyle(**custom_style)
+
+        # Endure that shape is isinstance of NodeShape
+        if not isinstance(shape, NodeShape):
+            shape = "rect" if shape == "rectangle" else shape
+            reverse_map = {ln.value: ln for ln in NodeShape}
+            shape = reverse_map.get(shape, None)
+
+            if not shape:
+                if shape is None:
+                    print("\033[93mNo shape was specified, defaulting to RECT\033[0m")
+                else:
+                    print(
+                        f"\033[93mInvalid shape detected: {shape}, defaulting to RECT\033[0m"
+                    )
+                shape = NodeShape.RECTANGLE
+
         node = Node(node_id, label, shape, style)
 
         if self._current_cluster and self._current_cluster in self.clusters:
@@ -148,6 +164,8 @@ class DotInterpreter:
         to_node: str,
         label: Optional[str] = None,
         style: EdgeStyle = EdgeStyle.SOLID,
+        arrowhead: str = "arrow",
+        arrowtail: str = None,
         **kwargs,
     ) -> Edge:
         """Create an edge with theme-appropriate styling."""
@@ -169,6 +187,14 @@ class DotInterpreter:
 
         if label:
             validate_label(label)
+
+        # Add arrow styles
+        kwargs["arrowhead"] = arrowhead
+        if arrowtail:
+            kwargs["arrowtail"] = arrowtail
+
+        if style not in [item.value for item in EdgeStyle]:
+            style = ""
 
         # Merge theme style with any custom styles
         theme_style = self._theme_config["edge_style"]
@@ -230,13 +256,23 @@ class DotInterpreter:
 
     def connect(
         self,
-        from_node: str,
+        from_node: str | Node,
         to_node: str,
         label: Optional[str] = None,
+        arrowhead: str = "arrow",
+        arrowtail: str = None,
         style: EdgeStyle = EdgeStyle.SOLID,
+        **kwargs,
     ) -> "DotInterpreter":
         """Connect two nodes with an optional label."""
-        self._create_edge(from_node, to_node, label, style)
+        if isinstance(from_node, Node) and hasattr(from_node, "id"):
+            from_node = from_node.id
+        if isinstance(to_node, Node) and hasattr(to_node, "id"):
+            to_node = to_node.id
+
+        self._create_edge(
+            from_node, to_node, label, arrowhead, arrowtail, style, **kwargs
+        )
         return self
 
     @contextmanager

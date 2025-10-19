@@ -15,6 +15,7 @@ class NodeShape(Enum):
     CIRCLE = "circle"
     TRIANGLE = "triangle"
     HEXAGON = "hexagon"
+    COMPONENT = "component"
     PARALLELOGRAM = "parallelogram"
     ROUNDED_RECTANGLE = "rounded"
 
@@ -50,6 +51,8 @@ class EdgeStyleConfig:
     color: str = "black"
     fontcolor: str = "black"
     fontsize: int = 10
+    arrowhead: str = "arrow"
+    arrowtail: str = None
     style: EdgeStyle = EdgeStyle.SOLID
 
 
@@ -73,7 +76,7 @@ class Node:
             f"width={self.style.width}",
             f"height={self.style.height}",
         ]
-        return f"{self.id} [{' '.join(attrs)}];"
+        return f"{self.id} [{', '.join(attrs).strip(',')}];"
 
 
 @dataclass
@@ -82,15 +85,27 @@ class Edge:
     to_node: str
     label: Optional[str] = None
     style: EdgeStyleConfig = None
+    arrowhead: str = "arrow"
+    arrowtail: str = None
 
     def __post_init__(self):
         if self.style is None:
             self.style = EdgeStyleConfig()
 
     def to_dot(self) -> str:
-        attrs = [f"style={self.style.style.value}"]
+        attrs = [
+            f"style={self.style.style.value}"
+            if self.style.style
+            and self.style.style.strip()
+            and hasattr(self.style.style, "value")
+            else ""
+        ]
         if self.label:
             attrs.append(f'label="{html.escape(self.label)}"')
+        if self.arrowhead:
+            attrs.append(f'arrowhead="{self.arrowhead}"')
+        if self.arrowtail:
+            attrs.append(f'arrowtail="{self.arrowtail}"')
         attrs.extend(
             [
                 f'color="{self.style.color}"',
@@ -98,7 +113,7 @@ class Edge:
                 f"fontsize={self.style.fontsize}",
             ]
         )
-        return f"{self.from_node} -> {self.to_node} [{' '.join(attrs)}];"
+        return f"{self.from_node} -> {self.to_node} [{', '.join(attrs).strip(',')}];"
 
 
 class Cluster:
