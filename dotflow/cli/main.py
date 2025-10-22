@@ -3,11 +3,14 @@ Main CLI entry point for DotFlow.
 """
 
 import os
-import click
 import sys
+import time
+import click
+import platform
+import subprocess
+from PIL import Image
 from pathlib import Path
 from typing import Optional
-
 from ..core.interpreter import DotInterpreter
 from ..core.themes import Theme
 from ..core.models import Direction, NodeShape
@@ -182,6 +185,7 @@ class InterractiveSession:
         self.cluster_nodes = []
         self.current_cluster = None
         self.all_options = False
+        self.preview_on = False
 
     def add_node(self):
         node_id = click.prompt("Enter node ID")
@@ -266,7 +270,7 @@ class InterractiveSession:
         click.echo(rf"{fg.GREEN}{self.flow.to_dot()}{RESET}")
         click.echo()
 
-    def save_progress(self):
+    def save_progress(self, echo=True):
         # Always generate both DOT and PNG
         dot_exporter = DotExporter()
         image_exporter = ImageExporter()
@@ -277,8 +281,9 @@ class InterractiveSession:
         dot_exporter.export(self.flow.to_dot(), str(dot_path))
         image_exporter.export(self.flow.to_dot(), str(png_path))
 
-        click.echo(f"{fg.GREEN}Progess saved{RESET}:")
-        click.echo(f"  - DOT file: {fg.BLUE}{dot_path}{RESET}")
+        if echo:
+            click.echo(f"{fg.GREEN}Progess saved{RESET}:")
+            click.echo(f"  - DOT file: {fg.BLUE}{dot_path}{RESET}")
 
     def preview_diagram(self):
         # Always generate both DOT and PNG
@@ -288,8 +293,22 @@ class InterractiveSession:
 
         image_exporter.export(self.flow.to_dot(), str(png_path))
 
-        click.echo(f"{fg.GREEN}Previe saved{RESET}:")
+        click.echo(f"{fg.GREEN}Preview saved{RESET}:")
         click.echo(f"  - PNG file: {fg.BLUE}{png_path}{RESET}")
+
+        system = platform.system()
+        if system == "Darwin":  # macOS
+            subprocess.run(["open", png_path])
+        elif system == "Windows":
+            subprocess.run(["start", png_path], shell=True)
+        else:  # Linux, BSD
+            subprocess.run(["xdg-open", png_path])
+
+        self.preview_on = True
+        # Update image in place
+        # time.sleep(2)
+        # img = Image.new("RGB", (200, 200), "blue")
+        # img.save(png_path)  # Some viewers refresh automatically
 
     def clear_screen(self):
         clear_screen()
@@ -326,6 +345,9 @@ class InterractiveSession:
 
                 click.echo(f"  8. {fg.LBLUE}More Options{RESET}")
                 click.echo("  9. Exit session")
+
+                self.save_progress(echo=False) if self.preview_on else None
+
                 if self.all_options:
                     self.show_all_options()
 
