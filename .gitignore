@@ -42,3 +42,6 @@ venv/
 *.mp4
 *.dot
 *.png
+*.pdf
+*.svg
+*.png
