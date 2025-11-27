@@ -41,13 +41,21 @@ class DotInterpreter:
         direction: Direction = Direction.TOP_DOWN,
     ):
         self.name = name
-        self.theme = theme
+        self.theme_dict = {
+            "default": Theme.DEFAULT,
+            "dark": Theme.DARK,
+            "colorful": Theme.COLORFUL,
+            "monochrome": Theme.MONOCHROME,
+            "blue": Theme.BLUE,
+            "green": Theme.GREEN
+        }
+        self.theme = self.validate_theme(theme)
         self.direction = direction
         self.nodes: Dict[str, Node] = {}
         self.edges: List[Edge] = []
         self.clusters: Dict[str, Cluster] = {}
         self._current_cluster: Optional[str] = None
-        self._theme_config = ThemeManager.get_theme_config(theme)
+        self._theme_config = ThemeManager.get_theme_config(self.theme)
         # API instances (lazy-loaded)
         self._pythonic_api: Optional["PythonicAPI"] = None
         self._natural_api: Optional["NaturalLanguageAPI"] = None
@@ -62,6 +70,12 @@ class DotInterpreter:
             "bgcolor": self._theme_config["bg_color"],
             "rankdir": direction.value.replace('"', "").replace("'", ""),
         }
+
+    def validate_theme(self, theme):
+        if isinstance(theme, str):
+            return self.theme_dict.get(theme, 'default')
+        else:
+            return theme
 
     @property
     def py(self) -> "PythonicAPI":
@@ -122,7 +136,10 @@ class DotInterpreter:
     ) -> Node:
         """Create a node with theme-appropriate styling."""
         # Remove whitespaces
-        node_id = node_id.replace(" ", "")
+        node_id = (node_id
+                   .replace(" ", "")
+                   .replace("-", "")
+                   )
         # Validate id and label
         validate_node_id(node_id)
         validate_label(label)
@@ -134,7 +151,7 @@ class DotInterpreter:
 
         style = NodeStyle(**custom_style)
 
-        # Endure that shape is isinstance of NodeShape
+        # Ensure that shape is isinstance of NodeShape
         if not isinstance(shape, NodeShape):
             shape = "rect" if shape == "rectangle" else shape
             reverse_map = {ln.value: ln for ln in NodeShape}
@@ -170,8 +187,14 @@ class DotInterpreter:
     ) -> Edge:
         """Create an edge with theme-appropriate styling."""
         # remove whitespaces
-        from_node = from_node.replace(" ", "")
-        to_node = to_node.replace(" ", "")
+        from_node = (from_node
+                     .replace(" ", "")
+                     .replace("-", "")
+                     )
+        to_node = (to_node
+                   .replace(" ", "")
+                   .replace("-", "")
+                   )
         # Validate nodes exist
         if from_node not in self.nodes and not any(
             from_node in [node.id for node in cluster.nodes]
